@@ -40,8 +40,10 @@ public class SimpleDB {
    }
    
    /**
+    * 大多数情况下的一个更简单的构造函数。与需要3个参数的构造函数不同，它还初始化元数据表。
     * A simpler constructor for most situations. Unlike the
     * 3-arg constructor, it also initializes the metadata tables.
+    *
     * @param dirname the name of the database directory
     */
    public SimpleDB(String dirname) {
@@ -79,7 +81,12 @@ public class SimpleDB {
       return planner;
    }
 
+
    // These methods aid in debugging
+   /**
+    *
+    * @return 这里返回的是fm, 而fm是前面调用SimpleDB构造方法的时候已经进行了初始化操作，已经成为了FileMgr对象
+    */
    public FileMgr fileMgr() {
       return fm;
    }   
