@@ -23,8 +23,9 @@ public class BufferMgr {
    public BufferMgr(FileMgr fm, LogMgr lm, int numbuffs) {
       bufferpool = new Buffer[numbuffs];
       numAvailable = numbuffs;
-      for (int i=0; i<numbuffs; i++)
+      for (int i=0; i<numbuffs; i++) {
          bufferpool[i] = new Buffer(fm, lm);
+      }
    }
    
    /**
@@ -40,9 +41,11 @@ public class BufferMgr {
     * @param txnum the transaction's id number
     */
    public synchronized void flushAll(int txnum) {
-      for (Buffer buff : bufferpool)
-         if (buff.modifyingTx() == txnum)
-         buff.flush();
+      for (Buffer buff : bufferpool) {
+         if (buff.modifyingTx() == txnum) {
+            buff.flush();
+         }
+      }
    }
    
    
@@ -75,8 +78,9 @@ public class BufferMgr {
             wait(MAX_TIME);
             buff = tryToPin(blk);
          }
-         if (buff == null)
+         if (buff == null) {
             throw new BufferAbortException();
+         }
          return buff;
       }
       catch(InterruptedException e) {
@@ -101,12 +105,14 @@ public class BufferMgr {
       Buffer buff = findExistingBuffer(blk);
       if (buff == null) {
          buff = chooseUnpinnedBuffer();
-         if (buff == null)
+         if (buff == null) {
             return null;
+         }
          buff.assignToBlock(blk);
       }
-      if (!buff.isPinned())
+      if (!buff.isPinned()) {
          numAvailable--;
+      }
       buff.pin();
       return buff;
    }
@@ -114,16 +120,19 @@ public class BufferMgr {
    private Buffer findExistingBuffer(BlockId blk) {
       for (Buffer buff : bufferpool) {
          BlockId b = buff.block();
-         if (b != null && b.equals(blk))
+         if (b != null && b.equals(blk)) {
             return buff;
+         }
       }
       return null;
    }
    
    private Buffer chooseUnpinnedBuffer() {
-      for (Buffer buff : bufferpool)
-         if (!buff.isPinned())
-         return buff;
+      for (Buffer buff : bufferpool) {
+         if (!buff.isPinned()) {
+            return buff;
+         }
+      }
       return null;
    }
 }

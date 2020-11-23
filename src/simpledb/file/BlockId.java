@@ -3,10 +3,9 @@ package simpledb.file;
 /**
  * 通过文件名和逻辑块号标识特定的块
  * 在磁盘上的操作
- *
- *  BlockId blk = new BlockId("student. tbl", 23)
- *  创建对student.tbl文件的第23块的引用。方法的文件名和数字返回它的文件名和块号。
- *
+ * <p>
+ * BlockId blk = new BlockId("student. tbl", 23)
+ * 创建对student.tbl文件的第23块的引用。方法的文件名和数字返回它的文件名和块号。
  *
  * @author Edward Sciore
  */
@@ -27,12 +26,6 @@ public class BlockId {
         return blknum;
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        BlockId blk = (BlockId) obj;
-        return filename.equals(blk.filename) && blknum == blk.blknum;
-    }
-
     /**
      * 1.hashcode是用来查找的，如果你学过数据结构就应该知道，在查找和排序这一章有
      * 例如内存中有这样的位置
@@ -48,8 +41,15 @@ public class BlockId {
      * 也就是说，我们先通过 hashcode来判断两个类是否存放某个桶里，但这个桶里可能有很多类，那么我们就需要再通过 equals 来在这个桶里找到我们要的类。
      * 那么。重写了equals()，为什么还要重写hashCode()呢？
      * 想想，你要在一个桶里找东西，你必须先要找到这个桶啊，你不通过重写hashcode()来找到桶，光重写equals()有什么用啊
+     *
      * @return
      */
+    @Override
+    public boolean equals(Object obj) {
+        BlockId blk = (BlockId) obj;
+        return filename.equals(blk.filename) && blknum == blk.blknum;
+    }
+
     @Override
     public String toString() {
         return "[file " + filename + ", block " + blknum + "]";

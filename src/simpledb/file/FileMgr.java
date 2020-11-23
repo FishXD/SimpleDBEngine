@@ -16,8 +16,16 @@ import java.util.Map;
  */
 public class FileMgr {
     private File dbDirectory;
+    /**
+     * 磁盘上的文件的块的大小
+     */
     private int blocksize;
     private boolean isNew;
+    private static int readBlockCount;
+    private static int writeBlockCount;
+    /**
+     * openFiles 一个HashMap，键是文件名， 值是文件随机读取权限
+     */
     private Map<String, RandomAccessFile> openFiles = new HashMap<>();
 
     /**
@@ -25,7 +33,7 @@ public class FileMgr {
      * 如果不存在这样的文件夹，则为新数据库创建一个文件夹
      *
      * @param dbDirectory 数据库名称的字符串
-     * @param blocksize 每个块大小的整数
+     * @param blocksize   每个块大小的整数
      */
     public FileMgr(File dbDirectory, int blocksize) {
         this.dbDirectory = dbDirectory;
@@ -48,40 +56,44 @@ public class FileMgr {
     }
 
     /**
-     * 查找指定文件中的适当位置，并将该块的内容读入指定页的字节缓冲区。
+     * 将磁盘上的文件的  指定块号的块  的内容读入指定的缓冲区位置
      *
-     * @param blk
-     * @param p
+     * @param blk 指定的磁盘上的文件的块的对象
+     * @param p   指定的内存上的缓冲区的对象
      */
     public synchronized void read(BlockId blk, Page p) {
         try {
             RandomAccessFile f = getFile(blk.fileName());
             f.seek(blk.number() * blocksize);
+            // 从随机读写文件的通道读取内容到给定缓冲区
             f.getChannel().read(p.contents());
+            countReadBlockNums();
         } catch (IOException e) {
             throw new RuntimeException("cannot read block " + blk);
         }
     }
 
     /**
-     * 将指定块的内容写入指定的页
+     * 将指定的缓冲区位置  的内容写入 磁盘上的文件的  指定块号的块
      *
-     * @param blk
-     * @param p
+     * @param blk 指定的磁盘上的文件的块的对象
+     * @param p   指定的内存上的缓冲区的对象
      */
     public synchronized void write(BlockId blk, Page p) {
         try {
-            // 通过传入的块知道块是在哪个文件中的
-            // 再通过文件名获取文件的对象
             RandomAccessFile f = getFile(blk.fileName());
-            // 将文件的指针移动到指定的字节上(块号*块的大小)
+            // 将磁盘上的文件内的块的指针移动到指定的块上(块号*块的大小)
             f.seek(blk.number() * blocksize);
             // getChannel()
             // 返回与此文件关联的唯一的FileChannel(用于读取，写入，映射和操作文件的通道。)对象。
             // write(ByteBuffer src)
-            // 从给定的缓冲区向该通道写入一个字节序列。
-            //
+            // 从给定的缓冲区位置向 写文件通道 写入一个字节序列。
+            // 从给定的要写入的磁盘中的文件的块 的第一个字节开始写入，而不是紧跟着块中已有的数据的后方写入
+            // 除非该通道处于append模式
+
+            // 从磁盘上的文件打开一个通道，该通道执行的是从内存的缓冲区写入字节到磁盘，把内存的缓冲区的指针指向缓冲区开头
             f.getChannel().write(p.contents());
+            countWriteBlockNums();
         } catch (IOException e) {
             throw new RuntimeException("cannot write block" + blk);
         }
@@ -124,8 +136,15 @@ public class FileMgr {
         return blocksize;
     }
 
+    /**
+     * 根据传入的文件名，获取磁盘上文件的随机读写权限，如果没有该文件则创建并赋予随机读写权限
+     *
+     * @param filename 磁盘上需要获取随机读写权限的文件的文件名
+     * @return 可随机读写的文件对象
+     * @throws IOException IO异常
+     */
     private RandomAccessFile getFile(String filename) throws IOException {
-        // 返回指定键映射到的值，如果该映射不包含该键的映射，则返回null。
+        // 获取在HashMap中的文件的随机读写权限
         RandomAccessFile f = openFiles.get(filename);
         if (f == null) {
             File dbTable = new File(dbDirectory, filename);
@@ -133,5 +152,25 @@ public class FileMgr {
             openFiles.put(filename, f);
         }
         return f;
+    }
+
+    /**
+     *
+     * @return  本次操作对文件的读取情况
+     */
+    public int countReadBlockNums() {
+        readBlockCount++;
+        //System.out.println("读了" + readBlockCount + "块磁盘上的文件的块到内存缓冲区");
+        return readBlockCount;
+    }
+
+    /**
+     *
+     * @return  本次操作对文件的写入情况
+     */
+    public int countWriteBlockNums() {
+        writeBlockCount++;
+        //System.out.println("写了" + writeBlockCount + "页内存缓冲区的文件到磁盘上的文件的块");
+        return writeBlockCount;
     }
 }

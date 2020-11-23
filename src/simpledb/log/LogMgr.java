@@ -30,6 +30,7 @@ public class LogMgr {
       this.logfile = logfile;
       byte[] b = new byte[fm.blockSize()];
       logpage = new Page(b);
+      // 求块号
       int logsize = fm.length(logfile);
       if (logsize == 0)
          currentblk = appendNewBlock();
