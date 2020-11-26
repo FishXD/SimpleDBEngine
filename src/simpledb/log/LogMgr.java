@@ -22,7 +22,7 @@ public class LogMgr {
     * Creates the manager for the specified log file.
     * If the log file does not yet exist, it is created
     * with an empty first block.
-    * @param FileMgr the file manager
+    * @param fm the file manager
     * @param logfile the name of the log file
     */
    public LogMgr(FileMgr fm, String logfile) {
@@ -32,9 +32,9 @@ public class LogMgr {
       logpage = new Page(b);
       // 求块号
       int logsize = fm.length(logfile);
-      if (logsize == 0)
+      if (logsize == 0) {
          currentblk = appendNewBlock();
-      else {
+      } else {
          currentblk = new BlockId(logfile, logsize-1);
          fm.read(currentblk, logpage);
       }
@@ -47,8 +47,9 @@ public class LogMgr {
     * @param lsn the LSN of a log record
     */
    public void flush(int lsn) {
-      if (lsn >= lastSavedLSN)
+      if (lsn >= lastSavedLSN) {
          flush();
+      }
    }
 
    public Iterator<byte[]> iterator() {
@@ -79,7 +80,11 @@ public class LogMgr {
       }
       int recpos = boundary - bytesneeded;
 
-      logpage.setBytes(recpos, logrec);
+      try {
+         logpage.setBytes(recpos, logrec);
+      } catch (Exception e) {
+         e.printStackTrace();
+      }
       logpage.setInt(0, recpos); // the new boundary
       latestLSN += 1;
       return latestLSN;
@@ -89,7 +94,7 @@ public class LogMgr {
     * Initialize the bytebuffer and append it to the log file.
     */
    private BlockId appendNewBlock() {
-      BlockId blk = fm.append(logfile);     
+      BlockId blk = fm.append(logfile);
       logpage.setInt(0, fm.blockSize());
       fm.write(blk, logpage);
       return blk;

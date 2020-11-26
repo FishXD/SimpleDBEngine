@@ -1,6 +1,9 @@
 package simpledb.jdbc.embedded;
 
+import java.rmi.RemoteException;
 import java.sql.SQLException;
+
+import simpledb.file.FileMgr;
 import simpledb.server.SimpleDB;
 import simpledb.tx.Transaction;
 import simpledb.plan.Planner;
@@ -30,6 +33,7 @@ class EmbeddedConnection extends ConnectionAdapter {
    /**
     * Creates a new Statement for this connection.
     */
+   @Override
    public EmbeddedStatement createStatement() throws SQLException {
       return new EmbeddedStatement(this, planner);
    }
@@ -37,6 +41,7 @@ class EmbeddedConnection extends ConnectionAdapter {
    /**
     * Closes the connection by committing the current transaction.
     */
+   @Override
    public void close() throws SQLException {
       currentTx.commit();
    }
@@ -44,17 +49,25 @@ class EmbeddedConnection extends ConnectionAdapter {
    /**
     * Commits the current transaction and begins a new one.
     */
+   @Override
    public void commit() throws SQLException {
       currentTx.commit();
       currentTx = db.newTx();
+      FileMgr fm = db.fileMgr();
+      System.out.println("写了" + fm.countWriteBlockNums() + "页内存缓冲区的文件到磁盘上的文件的块");
+      System.out.println("读了" + fm.countReadBlockNums() + "块磁盘上的文件的块到内存缓冲区");
    }
 
    /**
     * Rolls back the current transaction and begins a new one.
     */
+   @Override
    public void rollback() throws SQLException {
       currentTx.rollback();
       currentTx = db.newTx();
+      FileMgr fm = db.fileMgr();
+      System.out.println("写了" + fm.countWriteBlockNums() + "页内存缓冲区的文件到磁盘上的文件的块");
+      System.out.println("读了" + fm.countReadBlockNums() + "块磁盘上的文件的块到内存缓冲区");
    }
 
    /**
