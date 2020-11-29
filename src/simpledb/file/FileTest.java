@@ -9,8 +9,8 @@ import java.io.IOException;
  */
 public class FileTest {
     public static void main(String[] args) throws IOException {
-        // 三个参数指定引擎应该使用名为“studentdb”的数据库，使用400字节的块和具有8个的缓冲区插槽的缓冲区管理器
-        // 400字节的块大小是SimpleDB的默认值。
+        // 三个参数指定引擎应该使用名为“studentdb”的数据库，使用磁盘上的400字节的块和具有8个的缓冲区插槽的缓冲区管理器
+        // 400字节的磁盘块是SimpleDB的默认值。
         // 在商业数据库系统中，该值将被设置为操作系统定义的块大小;一个典型的块大小是4K字节
         SimpleDB db = new SimpleDB("filetest", 400, 8);
         FileMgr fm = db.fileMgr();

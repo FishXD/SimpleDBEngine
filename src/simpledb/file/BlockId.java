@@ -10,20 +10,32 @@ package simpledb.file;
  * @author Edward Sciore
  */
 public class BlockId {
-    private String filename;
-    private int blknum;
+    /**
+     * 磁盘上的块所在的文件名
+     */
+    private String fileName;
+    /**
+     * 磁盘上的文件的块号
+     */
+    private int blkNum;
 
-    public BlockId(String filename, int blknum) {
-        this.filename = filename;
-        this.blknum = blknum;
+    /**
+     * 根据传入的文件名称以及文件的目标块号进行文件的目标块的初始化
+     *
+     * @param fileName  想要获取目标块对象的所在的文件的文件名
+     * @param blkNum    想要获取目标块对象的所在文件的块号，块号从0开始
+     */
+    public BlockId(String fileName, int blkNum) {
+        this.fileName = fileName;
+        this.blkNum = blkNum;
     }
 
     public String fileName() {
-        return filename;
+        return fileName;
     }
 
     public int number() {
-        return blknum;
+        return blkNum;
     }
 
     /**
@@ -47,12 +59,12 @@ public class BlockId {
     @Override
     public boolean equals(Object obj) {
         BlockId blk = (BlockId) obj;
-        return filename.equals(blk.filename) && blknum == blk.blknum;
+        return fileName.equals(blk.fileName) && blkNum == blk.blkNum;
     }
 
     @Override
     public String toString() {
-        return "[file " + filename + ", block " + blknum + "]";
+        return "[file " + fileName + ", block " + blkNum + "]";
     }
 
     @Override

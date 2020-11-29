@@ -28,15 +28,15 @@ public class SimpleDB {
 
    /**
     * A constructor useful for debugging.
-    * @param dirname the name of the database directory
-    * @param blocksize the block size
-    * @param buffsize the number of buffers
+    * @param dirname 数据库目录的名称
+    * @param blockSize 磁盘上的块的大小
+    * @param buffSize 缓冲区管理器的插槽个数(一个插槽可以容纳一个缓冲区)
     */
-   public SimpleDB(String dirname, int blocksize, int buffsize) {
+   public SimpleDB(String dirname, int blockSize, int buffSize) {
       File dbDirectory = new File(dirname);
-      fm = new FileMgr(dbDirectory, blocksize);
+      fm = new FileMgr(dbDirectory, blockSize);
       lm = new LogMgr(fm, LOG_FILE);
-      bm = new BufferMgr(fm, lm, buffsize); 
+      bm = new BufferMgr(fm, lm, buffSize);
    }
    
    /**
@@ -89,7 +89,12 @@ public class SimpleDB {
     */
    public FileMgr fileMgr() {
       return fm;
-   }   
+   }
+
+   /**
+    *
+    * @return 日志管理对象
+    */
    public LogMgr logMgr() {
       return lm;
    }   

@@ -19,7 +19,7 @@ public class FileMgr {
     /**
      * 磁盘上的文件的块的大小
      */
-    private int blocksize;
+    private int blockSize;
     private boolean isNew;
     private static int readBlockCount;
     private static int writeBlockCount;
@@ -32,12 +32,12 @@ public class FileMgr {
      * 数据库名称用作包含数据库文件的文件夹的名称;此文件夹位于引擎的当前目录中。
      * 如果不存在这样的文件夹，则为新数据库创建一个文件夹
      *
-     * @param dbDirectory 数据库名称的字符串
-     * @param blocksize   每个块大小的整数
+     * @param dbDirectory 要管理数据库目录文件的对象
+     * @param blockSize   磁盘上的块的大小
      */
-    public FileMgr(File dbDirectory, int blocksize) {
+    public FileMgr(File dbDirectory, int blockSize) {
         this.dbDirectory = dbDirectory;
-        this.blocksize = blocksize;
+        this.blockSize = blockSize;
         // exists() 测试此抽象路径名表示的文件或目录是否存在。
         isNew = !dbDirectory.exists();
 
@@ -47,10 +47,11 @@ public class FileMgr {
         }
 
         // remove any leftover temporary tables(删除所有剩余的临时表)
-        for (String filename : dbDirectory.list()) {
-            if (filename.startsWith("temp")) {
+        for (String fileName : dbDirectory.list()) {
+            if (fileName.startsWith("temp")) {
                 // File(File parent, String child)  从父抽象路径名和子路径名字符串创建新的 File实例。
-                new File(dbDirectory, filename).delete();
+                // 删除由此抽象路径名表示的文件或目录。如果此路径名表示一个目录，则要删除该目录，该目录必须为空。
+                new File(dbDirectory, fileName).delete();
             }
         }
     }
@@ -58,13 +59,13 @@ public class FileMgr {
     /**
      * 将磁盘上的文件的  指定块号的块  的内容读入指定的缓冲区位置
      *
-     * @param blk 指定的磁盘上的文件的块的对象
-     * @param p   指定的内存上的缓冲区的对象
+     * @param blk 出发磁盘块
+     * @param p   目的内存页
      */
     public synchronized void read(BlockId blk, Page p) {
         try {
             RandomAccessFile f = getFile(blk.fileName());
-            f.seek(blk.number() * blocksize);
+            f.seek(blk.number() * blockSize);
             // 从随机读写文件的通道读取内容到给定缓冲区
             f.getChannel().read(p.contents());
             countReadBlockNums();
@@ -83,7 +84,7 @@ public class FileMgr {
         try {
             RandomAccessFile f = getFile(blk.fileName());
             // 将磁盘上的文件内的块的指针移动到指定的块上(块号*块的大小)
-            f.seek(blk.number() * blocksize);
+            f.seek(blk.number() * blockSize);
             // getChannel()
             // 返回与此文件关联的唯一的FileChannel(用于读取，写入，映射和操作文件的通道。)对象。
             // write(ByteBuffer src)
@@ -102,16 +103,21 @@ public class FileMgr {
     /**
      * 寻找文件的末尾，并向其写入一个空的字节数组，这将导致OS自动扩展该文件。
      *
-     * @param filename
-     * @return
+     * @param fileName  需要寻找末尾并在末尾写入空的字节数组以此来扩展文件块数的文件的文件名
+     * @return  返回文件的目标块的对象
      */
-    public synchronized BlockId append(String filename) {
-        int newblknum = length(filename);
-        BlockId blk = new BlockId(filename, newblknum);
-        byte[] b = new byte[blocksize];
+    public synchronized BlockId append(String fileName) {
+        // 通过length方法获取到该块在文件的第几块中
+        int newBlkNum = length(fileName);
+        // 获取文件的在目标块的对象
+        BlockId blk = new BlockId(fileName, newBlkNum);
+        byte[] b = new byte[blockSize];
         try {
+            // 获取磁盘上的目标文件的随机读写权限
             RandomAccessFile f = getFile(blk.fileName());
-            f.seek(blk.number() * blocksize);
+            // 将目标文件的块指针移到目标块上
+            f.seek(blk.number() * blockSize);
+            // 在目标文件中的目标块上写入400字节的blockSize的字节数组，致使OS自动扩展该文件的块数
             f.write(b);
         } catch (IOException e) {
             throw new RuntimeException("cannot append block" + blk);
@@ -119,12 +125,20 @@ public class FileMgr {
         return blk;
     }
 
-    public int length(String filename) {
+    /**
+     * 根据传入的文件名判断该文件需要几个完整的内存页来放置。注意：文件的块号从0开始。
+     * <p>
+     *     如文件名为"1.txt"的文件长500字节,1个内存页400字节，则调用此方法返回1。
+     *
+     * @param fileName  需要与内存页大小比较的文件的文件名
+     * @return 返回该文件需要几个完整的内存页来放置，注意：文件的块号从0开始。
+     */
+    public int length(String fileName) {
         try {
-            RandomAccessFile f = getFile(filename);
-            return (int) (f.length() / blocksize);
+            RandomAccessFile f = getFile(fileName);
+            return (int) (f.length() / blockSize);
         } catch (IOException e) {
-            throw new RuntimeException("cannot access " + filename);
+            throw new RuntimeException("cannot access " + fileName);
         }
     }
 
@@ -133,23 +147,23 @@ public class FileMgr {
     }
 
     public int blockSize() {
-        return blocksize;
+        return blockSize;
     }
 
     /**
      * 根据传入的文件名，获取磁盘上文件的随机读写权限，如果没有该文件则创建并赋予随机读写权限
      *
-     * @param filename 磁盘上需要获取随机读写权限的文件的文件名
+     * @param fileName 磁盘上需要获取随机读写权限的文件的文件名
      * @return 可随机读写的文件对象
      * @throws IOException IO异常
      */
-    private RandomAccessFile getFile(String filename) throws IOException {
+    private RandomAccessFile getFile(String fileName) throws IOException {
         // 获取在HashMap中的文件的随机读写权限
-        RandomAccessFile f = openFiles.get(filename);
+        RandomAccessFile f = openFiles.get(fileName);
         if (f == null) {
-            File dbTable = new File(dbDirectory, filename);
+            File dbTable = new File(dbDirectory, fileName);
             f = new RandomAccessFile(dbTable, "rws");
-            openFiles.put(filename, f);
+            openFiles.put(fileName, f);
         }
         return f;
     }
